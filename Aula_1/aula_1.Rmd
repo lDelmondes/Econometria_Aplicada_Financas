@@ -1,0 +1,220 @@
+---
+title: "Aula 1"
+author: "Lucas Delmondes"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+      highlight: textmate
+      theme: flatly
+      number_sections: yes 
+      toc: yes
+      toc_float: 
+          collapsed: yes
+          smooth_croll: no
+  pdf_document: default
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+Puxando as bibliotecas necessarias:
+
+```{r message=FALSE, warning=FALSE}
+library(readxl)
+library(ggplot2)
+library(wooldridge)
+```
+
+# EXEMPLO 1
+
+Lendo nossa base de dados em Excel
+
+```{r echo=TRUE}
+database<-read_excel("book1.xlsx")
+database
+```
+
+Puxando o plot dos elementos de nossas planilha
+
+```{r}
+p1<-plot(database$PERÍODO, database$Y)
+p2<-plot(database$PERÍODO, database$X)
+p3<-plot(database$Y, database$X)
+```
+
+Agora fazendo a regressão linear:
+
+```{r}
+reg<-lm(Y ~ X, database)
+summary(reg)
+```
+
+Mais alguns plots:
+
+```{r}
+ggplot(database, aes(x=Y, y=X))+
+  geom_smooth(method = lm, se = FALSE)
+```
+
+# EXEMPLO 2
+
+```{r}
+data("wage1")
+```
+
+Fazendo a regressão com o log do wage para no final virar uma relação entre: um aumento de ano de estudo é igual a uma variação em porcentagem no salário
+
+```{r}
+reg2 <- lm(lwage ~ educ, wage1)
+summary(reg2)
+```
+
+Temos que o aumento da educação impacta em um aumento de 0,08% no salário
+
+Agora os plots:
+
+```{r}
+ggplot(wage1, aes(x=educ, y=lwage))+
+  geom_smooth(method = lm)
+```
+
+```{r}
+plot(reg2)
+```
+
+## Criando a variavel
+
+Criando uma variavel, que seria o log da educação e adicionando ela ao meu dataset
+
+```{r}
+#criando uma constante para não termos problemas ao realizar o cálculo do log
+constante <- 0.001
+leduc <- log(wage1$educ + constante)
+
+#adicionando nossa variavel ao database
+wage1$leduc <- leduc
+```
+
+Fazendo a regressão com o log da renda para o log da educação, temos que:
+
+```{r}
+reg3 <- lm(lwage ~ leduc, wage1)
+summary(reg3)
+```
+
+Temos que o aumento de 1% em educação impacta em um aumento de 0,16% no salário
+
+Agora os plots:
+
+```{r}
+ggplot(wage1, aes(x=leduc, y=lwage))+
+  geom_smooth(method = lm)
+```
+
+```{r}
+plot(reg3)
+```
+
+# Procurando o melhor modelo
+
+No meu modelo irei utilizar as variaveis de anos de educação, anos de experiencia, o fato da pessoa ser mulher e o fato da pessoa ser casada para explicar a composição do salário por hora de um trabalhador.
+
+```{r}
+reghello <- lm(wage ~ educ + exper + female + married, wage1)
+summary(reghello)
+```
+
+Podemos ver que o intercepto deu como significante a nível de 0,01%, mas nosso R quadrado está muito baixo, e se retirarmos nosso intercepto?
+
+```{r}
+#se colocarmos "0" antes das variaveis explicativas, o intercepto é retirado
+reghello_ <- lm(wage ~ 0 + educ + exper + female + married , wage1)
+summary(reghello_)
+```
+
+```{r}
+# Salvando nosso R quadrado
+reghello_s = summary(reghello_)
+r1 <- reghello_s$adj.r.squared
+r1
+```
+
+Ok, agora quero substituir a experiencia pelo tempo de empresa de um profissional.
+
+No meu modelo irei utilizar as variaveis de anos de educação, anos de mesma empresa, o fato da pessoa ser mulher e o fato da pessoa ser casada para explicar a composição do salário por hora de um trabalhador.
+
+```{r}
+regtest <- lm(wage ~ educ + tenure + female + married, wage1)
+summary(regtest)
+```
+
+Podemos ver que o intercepto deu como significante a nível de 0,05%, mas nosso R quadrado está muito baixo, e se retirarmos nosso intercepto?
+
+```{r}
+regpft <- lm(wage ~ 0 + educ + tenure + female + married, wage1)
+summary(regpft)
+```
+
+```{r}
+# Salvando nosso R quadrado
+regpft_s = summary(regpft)
+r2 <- regpft_s$adj.r.squared
+r2
+```
+
+Agora vamos comparar os R quadrados dos dois modelos e ver o que temos:
+
+```{r}
+if (r1 > r2) {
+  print ("Com experincia é melhor")
+} else {
+  print ("Com anos de empresa é melhor")
+}
+```
+
+Podemos ver que o modelo com anos de empresa é melhor! Três variaveis deram significantes em nivel de 0,001% ou até menor, e uma a nível de 0,01%. Nosso p valor está significante a nivel de 0,001% e nosso R quadrado está alto, ou seja, o modelo consegue responder 81% da formação do salário.
+
+Interpretando temos que: O aumento de 1 ano de educação resulta em um aumento de \$0,45 em salário. O aumento de 1 ano de mesma empresa resulta em um aumento de \$0,14 em salário. O fato da pessoa ser mulher apresenta-se como uma diminuição de \$1,86 em salário. O fato da pessoa ser casada apresenta-se com um aumento de \$0,59 em salário.
+
+Agora vamos fazer os plots dessa regressão escolhida:
+
+```{r}
+plot(regpft)
+```
+
+Os resíduos não ficaram legal! Mas até podemos ver que pontos discrepantes que fizram isso, olhando no grosso temos uma boa concentração na média zero e com variancia constante. Será que podemos melhorar?
+
+Quis manter a mesma regressão usada acima, mas agora adicionando a diferenciação da área em que o profissional atua:
+
+```{r}
+regexp <- lm(wage ~ 0 + educ + tenure + female + married + construc + ndurman + trcommpu + trade + services + profserv + profocc + clerocc + servocc, wage1)
+summary(regexp)
+```
+
+```{r}
+# Salvando nosso R quadrado
+regexp_s = summary(regexp)
+r3 <- regexp_s$adj.r.squared
+r3
+```
+
+Tivemos um bom resultado em nosso R quadrado, mas algumas profissões deram como estatisticamente insignificante, será que vale a pena mante-las em nosso modelo?
+Se nosso objetivo é somente a previsão da variavel dependente (renda), nosso modelo é capaz de atender isso, já se nossa intenção é mensurar quanto cada variavel explicativa é capaz de impactar a variavel dependente, esse modelo deve ser descartado.
+
+Vamos aos plots:
+
+```{r}
+plot(regexp)
+```
+
+Os residuos também não possuem uma boa cara. Mas podemos ver uma concetração na média zero e uma variancia constante, se retirarmos certos pontos discrepantes.
+
+Agora vamos comparar os R quadrados de nossas duas regressôes:
+
+```{r}
+if (r2 > r3) {
+  print ("Sem as profissões é melhor")
+} else {
+  print ("Com as profissões é melhor")
+}
+```
