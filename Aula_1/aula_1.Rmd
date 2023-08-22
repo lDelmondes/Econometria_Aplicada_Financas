@@ -182,7 +182,7 @@ Agora vamos fazer os plots dessa regressão escolhida:
 plot(regpft)
 ```
 
-Os resíduos não ficaram legal! Mas até podemos ver que pontos discrepantes que fizram isso, olhando no grosso temos uma boa concentração na média zero e com variancia constante. Será que podemos melhorar?
+Os resíduos não estão legais! Mas até podemos ver que pontos discrepantes que fizeram isso, olhando no grosso temos uma boa concentração na média zero e com variancia constante. Será que podemos melhorar?
 
 Quis manter a mesma regressão usada acima, mas agora adicionando a diferenciação da área em que o profissional atua:
 
@@ -209,7 +209,7 @@ plot(regexp)
 
 Os residuos também não possuem uma boa cara. Mas podemos ver uma concetração na média zero e uma variancia constante, se retirarmos certos pontos discrepantes.
 
-Agora vamos comparar os R quadrados de nossas duas regressôes:
+Agora vamos comparar os R quadrados de nossas duas regressões:
 
 ```{r}
 if (r2 > r3) {
